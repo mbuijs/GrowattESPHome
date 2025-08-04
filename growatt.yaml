@@ -1,24 +1,20 @@
 substitutions:
-  device_name: Growatt
-  device_description: "Esphome for Growatt"
-  modbus_update_interval: 15s
-  skip_updates_slow: "6" 
+  modbus_update_interval: 5s
+  skip_updates_slow: 11
 
 esphome:
   name: growatt
+  friendly_name: Growatt
   on_boot:
     priority: 600
     then:
-      - lambda: |-        
+      - lambda: |-
           delay(60000);
-  project:
-    name: PVPro.ShineWifi-X
-    version: "2.0"
 
 esp8266:
   board: esp07s
 
-# Enable logging
+# Disable logging, modbus is using uart
 logger:
   baud_rate: 0
 
@@ -39,7 +35,7 @@ wifi:
     ssid: "Growatt Fallback Hotspot"
     password: "12345678"
 
-  # Enable Web server
+# Enable Web server
 web_server:
   port: 80
 
@@ -80,7 +76,7 @@ modbus_controller:
     address: 0x1
     modbus_id: modbus1
     setup_priority: -10
-    update_interval: ${modbus_update_interval}   
+    update_interval: ${modbus_update_interval}
 
 number:
   - platform: modbus_controller
@@ -98,8 +94,8 @@ number:
 
   - platform: modbus_controller
     modbus_controller_id: growatt
-    id: max_output_power
-    name: "Max Output Power"
+    id: active_power_rate
+    name: "Active Power Rate"
     address: 3
     register_type: holding
     value_type: U_WORD
@@ -107,17 +103,18 @@ number:
     max_value: 100
     step: 1
     unit_of_measurement:  "%"
-    entity_category: config    
+    entity_category: config
 
 sensor:
   - platform: modbus_controller
-    name: "status_code"
-    skip_updates: $skip_updates_slow
+    id: status
+    name: "Status code"
+    # skip_updates: $skip_updates_slow
     address: 0
     register_type: "read"
-    internal: true
+    value_type: U_WORD
+    disabled_by_default: true
     accuracy_decimals: 0
-    id: status
 
   - platform: modbus_controller
     name: "Input Power"
@@ -127,11 +124,11 @@ sensor:
     device_class: power
     state_class: measurement
     icon: mdi:solar-power-variant
-    value_type: U_WORD
+    value_type: U_DWORD
     accuracy_decimals: 0
     filters:
-      - multiply: 0.1      
-  
+      - multiply: 0.1
+
   - platform: modbus_controller
     name: "PV1 voltage"
     address: 3
@@ -139,12 +136,11 @@ sensor:
     unit_of_measurement: V
     device_class: voltage
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 0
     filters:
     - multiply: 0.1
-    
+
   - platform: modbus_controller
     name: "PV1 current"
     address: 4
@@ -152,21 +148,19 @@ sensor:
     unit_of_measurement: A
     device_class: current
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 1
     filters:
     - multiply: 0.1
 
   - platform: modbus_controller
-    name: "PV1 Active power"
+    name: "PV1 input power"
     id: pv1_power
     address: 5
     register_type: "read"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:flash
     value_type: U_DWORD
     accuracy_decimals: 0
     filters:
@@ -179,12 +173,11 @@ sensor:
     unit_of_measurement: V
     device_class: voltage
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 0
     filters:
     - multiply: 0.1
-    
+
   - platform: modbus_controller
     name: "PV2 current"
     address: 8
@@ -192,181 +185,203 @@ sensor:
     unit_of_measurement: A
     device_class: current
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 1
     filters:
     - multiply: 0.1
 
   - platform: modbus_controller
-    name: "PV2 Active power"
+    name: "PV2 input power"
     id: pv2_power
     address: 9
     register_type: "read"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:flash
     value_type: U_DWORD
     accuracy_decimals: 0
     filters:
     - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Frequency"
+    name: "Output power"
+    address: 35
+    register_type: "read"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    value_type: U_DWORD
+    accuracy_decimals: 0
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid frequency"
     address: 37
     register_type: "read"
     unit_of_measurement: Hz
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 1
     filters:
     - multiply: 0.01
 
   - platform: modbus_controller
-    name: "Voltage Phase A"
+    name: "Grid L1 voltage"
     address: 38
     register_type: "read"
     unit_of_measurement: V
     device_class: voltage
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 1
     filters:
     - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Voltage Phase B"
-    address: 42
-    register_type: "read"
-    unit_of_measurement: V
-    device_class: voltage
-    state_class: measurement
-    icon: mdi:flash
-    value_type: U_WORD
-    accuracy_decimals: 1
-    filters:
-    - multiply: 0.1
-
-  - platform: modbus_controller
-    name: "Voltage Phase C"
-    address: 46
-    register_type: "read"
-    unit_of_measurement: V
-    device_class: voltage
-    state_class: measurement
-    icon: mdi:flash
-    value_type: U_WORD
-    accuracy_decimals: 1
-    filters:
-    - multiply: 0.1
-
-  - platform: modbus_controller
-    name: "Current Phase A"
+    name: "Grid L1 current"
     address: 39
     register_type: "read"
     unit_of_measurement: A
     device_class: current
     state_class: measurement
-    icon: mdi:flash
     value_type: U_WORD
     accuracy_decimals: 1
     filters:
     - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Current Phase B"
-    address: 43
-    register_type: "read"
-    unit_of_measurement: A
-    device_class: current
-    state_class: measurement
-    icon: mdi:flash
-    value_type: U_WORD
-    accuracy_decimals: 1
-    filters:
-    - multiply: 0.1
-
-  - platform: modbus_controller
-    name: "Current Phase C"
-    address: 47
-    register_type: "read"
-    unit_of_measurement: A
-    device_class: current
-    state_class: measurement
-    icon: mdi:flash
-    value_type: U_WORD
-    accuracy_decimals: 1
-    filters:
-    - multiply: 0.1
-
-  - platform: modbus_controller
-    name: "Power Phase A"
+    name: "Grid L1 power"
     address: 40
     register_type: "read"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:flash
     value_type: U_DWORD
     accuracy_decimals: 1
     filters:
-    - multiply: 0.1    
+    - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Power Phase B"
+    name: "Grid L2 voltage"
+    address: 42
+    register_type: "read"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid L2 current"
+    address: 43
+    register_type: "read"
+    unit_of_measurement: A
+    device_class: current
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid L2 power"
     address: 44
     register_type: "read"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:flash
     value_type: U_DWORD
     accuracy_decimals: 1
     filters:
-    - multiply: 0.1      
+    - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Power Phase C"
+    name: "Grid L3 voltage"
+    address: 46
+    register_type: "read"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid L3 current"
+    address: 47
+    register_type: "read"
+    unit_of_measurement: A
+    device_class: current
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid L3 power"
     address: 48
     register_type: "read"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:flash
     value_type: U_DWORD
     accuracy_decimals: 1
     filters:
-    - multiply: 0.1      
-
-  - platform: modbus_controller
-    name: "Grid Active Power"
-    address: 35
-    register_type: "read"
-    unit_of_measurement: W
-    device_class: power
-    state_class: measurement
-    icon: mdi:solar-power
-    value_type: U_DWORD
-    accuracy_decimals: 0
-    filters:
-    - multiply: 0.1    
+    - multiply: 0.1
 
   - platform: template
-    id: pv_power
-    name: "PV Active Power"
+    name: "PV input power"
     unit_of_measurement: W
     device_class: power
     state_class: measurement
-    icon: mdi:solar-power-variant
     accuracy_decimals: 0
     lambda: |-
-      return float((id(pv1_power).state + id(pv2_power).state));   
+      return float((id(pv1_power).state + id(pv2_power).state));
 
   - platform: modbus_controller
-    name: "Today's Generation"
+    name: "Grid RS voltage"
+    address: 50
+    register_type: "read"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid ST voltage"
+    address: 51
+    register_type: "read"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Grid RT voltage"
+    address: 52
+    register_type: "read"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+
+  - platform: modbus_controller
+    name: "Today energy generated"
     skip_updates: $skip_updates_slow
     address: 53
     register_type: "read"
@@ -377,10 +392,10 @@ sensor:
     value_type: U_DWORD
     accuracy_decimals: 1
     filters:
-    - multiply: 0.1   
+    - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Total Energy Production"
+    name: "Total energy generated"
     skip_updates: $skip_updates_slow
     address: 55
     register_type: "read"
@@ -391,10 +406,93 @@ sensor:
     value_type: U_DWORD
     accuracy_decimals: 1
     filters:
-    - multiply: 0.1    
+    - multiply: 0.1
 
   - platform: modbus_controller
-    name: "Inverter Module Temp"
+    name: "Work time total"
+    skip_updates: $skip_updates_slow
+    address: 57
+    register_type: "read"
+    unit_of_measurement: s
+    state_class: total_increasing
+    device_class: duration
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.5
+
+  - platform: modbus_controller
+    name: "PV1 energy today"
+    skip_updates: $skip_updates_slow
+    address: 59
+    register_type: "read"
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    icon: mdi:solar-power
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "PV1 energy total"
+    skip_updates: $skip_updates_slow
+    address: 61
+    register_type: "read"
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    icon: mdi:solar-power
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "PV2 energy today"
+    skip_updates: $skip_updates_slow
+    address: 63
+    register_type: "read"
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    icon: mdi:solar-power
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "PV2 energy total"
+    skip_updates: $skip_updates_slow
+    address: 65
+    register_type: "read"
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    icon: mdi:solar-power
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "PV energy total"
+    skip_updates: $skip_updates_slow
+    address: 91
+    register_type: "read"
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    icon: mdi:solar-power
+    value_type: U_DWORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+
+  - platform: modbus_controller
+    name: "Inverter temperature"
     address: 93
     register_type: "read"
     unit_of_measurement: °C
@@ -406,36 +504,78 @@ sensor:
     accuracy_decimals: 1
     filters:
     - multiply: 0.1
-    skip_updates: $skip_updates_slow   
+    # skip_updates: $skip_updates_slow
+
+  - platform: modbus_controller
+    name: "Inverter IPM temperature"
+    address: 94
+    register_type: "read"
+    unit_of_measurement: °C
+    device_class: temperature
+    state_class: measurement
+    entity_category: diagnostic
+    icon: mdi:thermometer
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+    # skip_updates: $skip_updates_slow
+
+  - platform: modbus_controller
+    name: "Inverter boost temperature"
+    address: 95
+    register_type: "read"
+    unit_of_measurement: °C
+    device_class: temperature
+    state_class: measurement
+    entity_category: diagnostic
+    icon: mdi:thermometer
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+    - multiply: 0.1
+    # skip_updates: $skip_updates_slow
+
+  - platform: modbus_controller
+    name: "Derating mode code"
+    id: derating_mode
+    address: 104
+    register_type: "read"
+    state_class: measurement
+    entity_category: diagnostic
+    value_type: U_WORD
+    disabled_by_default: true
+    # skip_updates: $skip_updates_slow
 
   - platform: uptime
     name: " Uptime"
     update_interval: 60s
+
   - platform: wifi_signal
     name: " Wi-Fi Signal"
-    update_interval: 60s    
+    update_interval: 60s
 
-select:
-  - platform: modbus_controller
-    name: "AC Charging"
-    icon: mdi:battery-charging-100
-    address: 1092
-    value_type: U_WORD
-    optionsmap:
-      "Disabled": 0
-      "Enabled": 1
-    skip_updates: $skip_updates_slow
+# select:
+#   - platform: modbus_controller
+#     name: "AC Charging"
+#     icon: mdi:battery-charging-100
+#     address: 1092
+#     value_type: U_WORD
+#     optionsmap:
+#       "Disabled": 0
+#       "Enabled": 1
+#     skip_updates: $skip_updates_slow
 
-  - platform: modbus_controller
-    name: "Inverter Priority"
-    icon: mdi:arrow-decision-outline
-    address: 1044
-    value_type: U_WORD
-    optionsmap:
-      "Load First": 0
-      "Battery First": 1
-      "Grid First": 2  
-    skip_updates: $skip_updates_slow
+#   - platform: modbus_controller
+#     name: "Inverter Priority"
+#     icon: mdi:arrow-decision-outline
+#     address: 1044
+#     value_type: U_WORD
+#     optionsmap:
+#       "Load First": 0
+#       "Battery First": 1
+#       "Grid First": 2
+#     skip_updates: $skip_updates_slow
 
 text_sensor:
   - platform: wifi_info
@@ -445,12 +585,12 @@ text_sensor:
       name: " Wi-Fi SSID"
     bssid:
       name: " Wi-Fi BSSID"
+  
   - platform: version
     name: "ESPHome Version"
-    hide_timestamp: true
 
   - platform: template
-    name: "Status state"
+    name: "Status"
     icon: mdi:eye
     entity_category: diagnostic
     lambda: |-
@@ -484,6 +624,24 @@ text_sensor:
         return {"Unknown"};
       }
 
+  - platform: template
+    name: "Derating mode"
+    entity_category: diagnostic
+    lambda: |-
+      switch (int(id(derating_mode).state)) {
+        case 0:  return std::string("No derate");
+        case 1:  return std::string("PV");
+        case 2:  return std::string("2*");
+        case 3:  return std::string("Vac");
+        case 4:  return std::string("Fac");
+        case 5:  return std::string("Tboost");
+        case 6:  return std::string("Tinv");
+        case 7:  return std::string("Control");
+        case 8:  return std::string("8*");
+        case 9:  return std::string("OverBack ByTime");
+        default: return std::string("Derating mode " + to_string(id(derating_mode).state));
+      }
+
   - platform: modbus_controller
     name: "Fault code"
     address: 105
@@ -507,4 +665,4 @@ text_sensor:
         // case 1~23 " Error: 99+x
         default: return std::string("Fault code: " + to_string(value));
       }
-      return x;    
+      return x;
